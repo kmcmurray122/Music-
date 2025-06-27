@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Music TED Talk Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', Arial, sans-serif;
+      color: #f6f6f6;
+      background-color: #283046;
+      background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M50.007 53.146c-8.355 0-16.18-2.022-22.29-5.417C20.86 44.947 17.5 40.843 17.5 36.395c0-4.447 3.36-8.552 10.217-11.333C33.828 21.568 41.653 19.546 50.007 19.546c8.355 0 16.179 2.022 22.29 5.516C79.156 27.843 82.5 31.947 82.5 36.395c0 4.447-3.344 8.552-10.203 11.334-6.11 3.395-13.935 5.417-22.29 5.417z" fill="%23344e6c" fill-opacity="0.16"/></svg>');
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 680px;
+      margin: 32px auto 28px auto;
+      background: rgba(34, 40, 49, 0.98);
+      border-radius: 20px;
+      padding: 24px 10px 20px 10px;
+      box-shadow: 0 8px 34px 0 rgba(28,40,60,0.23), 0 1.5px 6px 0 rgba(255,205,80,0.10);
+      backdrop-filter: blur(1.5px);
+    }
+    h1 {
+      font-size: 1.6em;
+      color: #ffd700;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      margin-top: 0;
+      margin-bottom: 13px;
+      text-shadow: 0 1px 0 #000, 0 2px 12px #ffd70060;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 14px;
+      color: #c6d0e5;
+      font-weight: 600;
+      font-size: 1em;
+      margin-bottom: 2px;
+    }
+    .autocomplete-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    input[type=text], textarea {
+      width: 100%;
+      padding: 10px 13px;
+      margin: 8px 0 0 0;
+      background: #232a32;
+      color: #fff;
+      border: 1.5px solid #3c4657;
+      border-radius: 7px;
+      font-size: 1em;
+      font-family: inherit;
+      transition: border 0.2s;
+      outline: none;
+      box-sizing: border-box;
+    }
+    input[type=text]:focus, textarea:focus {
+      border-color: #ffd700;
+      background: #293040;
+    }
+    .autocomplete-list {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 102%;
+      z-index: 10;
+      background: #222c3a;
+      border: 1.2px solid #3c4657;
+      border-top: none;
+      border-radius: 0 0 9px 9px;
+      box-shadow: 0 6px 20px #0006;
+      max-height: 220px;
+      overflow-y: auto;
+      font-size: 1em;
+      color: #fff;
+      animation: fadein 0.27s;
+    }
+    .autocomplete-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #31374d;
+      transition: background 0.13s;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item.active, .autocomplete-item:hover {
+      background: #ffd70033;
+      color: #222;
+    }
+    button {
+      background: linear-gradient(90deg, #ffd700 40%, #ffb347 100%);
+      color: #222;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 7px;
+      margin-top: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1em;
+      box-shadow: 0 2px 8px 0 #ffd70044;
+      transition: background 0.19s, transform 0.13s;
+      display: block;
+      width: 100%;
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    button:hover, button:active {
+      background: linear-gradient(90deg, #ffe066 10%, #ffb347 90%);
+      transform: translateY(-1px) scale(1.03);
+    }
+    .results-scroll-wrapper {
+      position: relative;
+      margin-top: 24px;
+      margin-bottom: 0;
+      background: none;
+      overflow: visible;
+      min-height: 120px;
+      display: none;
+      width: 100%;
+    }
+    .results-scroll {
+      display: flex;
+      overflow-x: auto;
+      gap: 12px;
+      padding: 0 10px 0 10px;
+      scrollbar-width: thin;
+      scrollbar-color: #ffb6c1 #222;
+      scroll-behavior: smooth;
+    }
+    .result-card {
+      min-width: 210px;
+      max-width: 92vw;
+      background: #22293a;
+      border-radius: 10px;
+      padding: 10px 10px 10px 10px;
+      box-shadow: 0 2px 8px #0004;
+      flex: none;
+      cursor: pointer;
+      transition: background 0.18s, box-shadow 0.18s, border 0.2s;
+      border: 1.2px solid transparent;
+      text-align: left;
+    }
+    .result-card.selected, .result-card:focus {
+      background: #ffe06622;
+      border: 1.5px solid #ffd700;
+    }
+    .result-card img {
+      width: 80px;
+      height: 52px;
+      border-radius: 7px;
+      margin-right: 9px;
+      background: #333;
+      object-fit: cover;
+      border: 1.5px solid #293040;
+      box-shadow: 0 2px 6px #0004;
+      float: left;
+    }
+    .result-card .video-info {
+      margin-left: 90px;
+    }
+    .result-card .video-title { font-weight: bold; color: #ffd700; font-size: 1em; }
+    .result-card .video-channel { font-size: 0.97em; color: #eee; }
+    .result-card:after {
+      content: "";
+      display: block;
+      clear: both;
+    }
+    .scroll-heart-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px; height: 32px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      z-index: 10;
+      padding: 0;
+      transition: transform 0.13s;
+      display: none;
+    }
+    .scroll-heart-btn svg {
+      width: 32px;
+      height: 32px;
+      stroke: #ff6b81;
+      fill: #ffb6c1;
+      filter: drop-shadow(0 2px 5px #2224);
+      transition: stroke 0.13s, fill 0.13s;
+    }
+    .scroll-heart-btn:hover svg {
+      stroke: #d72660;
+      fill: #ff6b81;
+      transform: scale(1.12);
+    }
+    .scroll-heart-left { left: 0; }
+    .scroll-heart-right { right: 0; }
+    .scroll-heart-btn[hidden] { display: none; }
+    .results {
+      margin-top: 28px;
+      display: none;
+      font-size: 1em;
+      text-align: center;
+    }
+    .card {
+      background: #283046;
+      border-radius: 14px;
+      padding: 14px 8px 14px 8px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 12px #0004;
+      border: 1.5px solid #3c4657;
+      animation: fadein 0.7s;
+      font-size: 1em;
+    }
+    .card h2 { color: #ffd700; margin-top: 0; font-size: 1.15em;}
+    iframe,
+    .playlist-card iframe {
+      width: 100%;
+      min-height: 170px;
+      height: 32vw;
+      max-height: 260px;
+      border: none;
+      border-radius: 9px;
+      margin-top: 10px;
+      background: #1a2130;
+      box-shadow: 0 1px 6px #0002;
+    }
+    .watch-btn {
+      display:inline-block;
+      background:#ffd700;
+      color:#222;
+      font-weight:600;
+      border-radius:6px;
+      padding:8px 20px;
+      text-decoration:none;
+      margin-top: 10px;
+      margin-bottom: 8px;
+      box-shadow:0 1px 8px #ffd70040;
+      transition: background 0.13s, color 0.13s;
+      font-size: 1em;
+    }
+    .watch-btn:hover {
+      background: #ffb347;
+      color: #111;
+    }
+    .desc { margin: 12px 0 0 0; color: #dde4f1; font-size: 0.96em;}
+    .playlist-section h2 {
+      color: #ffd700;
+      font-size: 1em;
+      margin-bottom: 10px;
+      letter-spacing: 0.01em;
+    }
+    .playlist-cards { display: flex; flex-direction: column; gap: 14px; }
+    .playlist-card {
+      background: #232a3d;
+      border-radius: 10px;
+      padding: 10px 8px 10px 8px;
+      position: relative;
+      box-shadow: 0 3px 12px #1920302a;
+      border: 1.5px solid #293040;
+      transition: box-shadow 0.18s, border-color 0.2s;
+      animation: fadein 0.7s;
+      font-size: 1em;
+    }
+    .playlist-card:hover {
+      box-shadow: 0 8px 26px 0 #ffd70029;
+      border-color: #ffd70099;
+    }
+    .playlist-card h3 {
+      color: #ffd700;
+      margin: 0 0 4px 0;
+      font-size: 1em;
+      font-weight: 700;
+    }
+    .playlist-card .remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #ff7070;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 0.97em;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 1px 8px 0 #ff707044;
+      transition: background 0.13s;
+    }
+    .playlist-card .remove-btn:hover { background: #e63946; }
+    .playlist-card .desc {
+      font-size: 0.97em;
+      margin: 10px 0 0 0;
+      color: #eaeff8;
+    }
+    .playlist-card .watch-btn { margin-bottom: 0; }
+
+    /* --- MOBILE BREAKPOINTS --- */
+    @media (max-width: 450px) {
+      .container {padding: 5vw 2vw;}
+      .results-scroll {padding: 0 1vw 0 1vw;}
+      .result-card {min-width: 90vw;}
+      .results {font-size: 0.95em;}
+      .card, .playlist-card {font-size: 0.97em;}
+      iframe, .playlist-card iframe {height: 40vw; min-height: 120px;}
+      label, h1, .playlist-section h2 {font-size: 1em;}
+    }
+    @media (max-width: 340px) {
+      .container {padding: 0;}
+      input[type=text], textarea {font-size: 0.92em;}
+      button, .watch-btn {font-size: 0.95em;}
+    }
+    @keyframes fadein {
+      0% { opacity: 0; transform: translateY(24px);}
+      100% { opacity: 1; transform: translateY(0);}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>YouTube Music TED Talk Builder</h1>
+    <label for="topic">Music topic or artist</label>
+    <div class="autocomplete-wrapper">
+      <input type="text" id="topic" placeholder="e.g. trap music, Radiohead, Mozart" autocomplete="off">
+      <div class="autocomplete-list" id="autocompleteList" style="display:none"></div>
+    </div>
+    <button id="searchBtn">Search YouTube</button>
+    <div class="results-scroll-wrapper" id="resultsScrollWrapper">
+      <button class="scroll-heart-btn scroll-heart-left" id="scrollLeftBtn" aria-label="Scroll Left">
+        <svg viewBox="0 0 24 24"><path d="M12 21C12 21 4 13.6 4 8.8C4 5.7 6.7 3 9.8 3C11.2 3 12.5 3.7 13.3 4.8C14.1 3.7 15.4 3 16.8 3C19.9 3 22.6 5.7 22.6 8.8C22.6 13.6 12 21 12 21Z" stroke-width="2" stroke="#ff6b81" fill="#ffb6c1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="results-scroll" id="resultsScroll"></div>
+      <button class="scroll-heart-btn scroll-heart-right" id="scrollRightBtn" aria-label="Scroll Right">
+        <svg viewBox="0 0 24 24"><path d="M12 21C12 21 4 13.6 4 8.8C4 5.7 6.7 3 9.8 3C11.2 3 12.5 3.7 13.3 4.8C14.1 3.7 15.4 3 16.8 3C19.9 3 22.6 5.7 22.6 8.8C22.6 13.6 12 21 12 21Z" stroke-width="2" stroke="#ff6b81" fill="#ffb6c1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="results" id="results"></div>
+    <label for="desc">Your TED Talk Text</label>
+    <textarea id="desc" rows="4" placeholder="Share your thoughts, facts, or a story about this music..."></textarea>
+    <button id="buildBtn">Build TED Talk Card</button>
+    <div class="card" id="tedCard" style="display:none"></div>
+    <div class="playlist-section" id="playlistSection">
+      <h2>Our Playlist</h2>
+      <div class="playlist-cards" id="playlistCards"></div>
+    </div>
+  </div>
+  <!-- (The JavaScript code is identical to your previous version and works on mobile as well) -->
+  <script>
+    // ---- AUTOCOMPLETE LOGIC ----
+    let autocompleteSuggestions = [];
+    let selectedSuggestionIdx = -1;
+    const topicInput = document.getElementById('topic');
+    const autocompleteList = document.getElementById('autocompleteList');
+
+    topicInput.addEventListener('input', function() {
+      const query = topicInput.value.trim();
+      if (!query) {
+        autocompleteList.style.display = 'none';
+        return;
+      }
+      // YouTube Suggest endpoint (JSONP)
+      const script = document.createElement('script');
+      const callbackName = 'ytSuggestCallback_' + Math.floor(Math.random() * 1000000);
+      window[callbackName] = function(data) {
+        if (data && data[1]) {
+          autocompleteSuggestions = data[1].map(item => item[0]);
+          showAutocomplete();
+        }
+        document.body.removeChild(script);
+        delete window[callbackName];
+      };
+      script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(query)}&callback=${callbackName}`;
+      document.body.appendChild(script);
+    });
+
+    function showAutocomplete() {
+      if (!autocompleteSuggestions.length) {
+        autocompleteList.style.display = 'none';
+        return;
+      }
+      autocompleteList.innerHTML = autocompleteSuggestions.map((s, idx) =>
+        `<div class="autocomplete-item${idx === selectedSuggestionIdx ? ' active' : ''}" data-idx="${idx}">${s}</div>`
+      ).join('');
+      autocompleteList.style.display = 'block';
+      Array.from(document.getElementsByClassName('autocomplete-item')).forEach(item => {
+        item.onclick = function() {
+          topicInput.value = item.textContent;
+          autocompleteList.style.display = 'none';
+          selectedSuggestionIdx = -1;
+          document.getElementById('searchBtn').click();
+        };
+      });
+    }
+
+    // Keyboard navigation for autocomplete
+    topicInput.addEventListener('keydown', function(e) {
+      if (autocompleteList.style.display === 'none') return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedSuggestionIdx = (selectedSuggestionIdx + 1) % autocompleteSuggestions.length;
+        showAutocomplete();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedSuggestionIdx = (selectedSuggestionIdx - 1 + autocompleteSuggestions.length) % autocompleteSuggestions.length;
+        showAutocomplete();
+      } else if (e.key === "Enter") {
+        if (selectedSuggestionIdx > -1 && autocompleteSuggestions[selectedSuggestionIdx]) {
+          topicInput.value = autocompleteSuggestions[selectedSuggestionIdx];
+          autocompleteList.style.display = 'none';
+          selectedSuggestionIdx = -1;
+          document.getElementById('searchBtn').click();
+          e.preventDefault();
+        } else {
+          autocompleteList.style.display = 'none';
+        }
+      } else if (e.key === "Escape") {
+        autocompleteList.style.display = 'none';
+        selectedSuggestionIdx = -1;
+      }
+    });
+
+    // Hide autocomplete if clicked outside
+    document.addEventListener('click', function(e) {
+      if (!topicInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+        autocompleteList.style.display = 'none';
+        selectedSuggestionIdx = -1;
+      }
+    });
+
+    // ---- PLAYLIST LOGIC ----
+    function getPlaylist() {
+      try {
+        return JSON.parse(localStorage.getItem('tedTalkPlaylist') || '[]');
+      } catch { return []; }
+    }
+    function savePlaylist(playlist) {
+      localStorage.setItem('tedTalkPlaylist', JSON.stringify(playlist));
+    }
+    function renderPlaylist() {
+      const playlist = getPlaylist();
+      const cardsHtml = playlist.length ? playlist.map((card, idx) => `
+        <div class="playlist-card">
+          <button class="remove-btn" data-idx="${idx}" title="Remove">&#10005;</button>
+          <h3>${card.title}</h3>
+          <div><b>${card.channel}</b></div>
+          <iframe src="https://www.youtube.com/embed/${card.videoId}" allowfullscreen></iframe>
+          <div>
+            <a href="https://www.youtube.com/watch?v=${card.videoId}" class="watch-btn" target="_blank">Watch on YouTube</a>
+          </div>
+          <div class="desc">${card.desc ? card.desc : "(No description.)"}</div>
+        </div>
+      `).join('') : `<div style="color:#aaa;">No songs added yet. Build cards and add them to your playlist!</div>`;
+      document.getElementById('playlistCards').innerHTML = cardsHtml;
+      document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.onclick = function() {
+          const idx = +btn.getAttribute('data-idx');
+          const playlist = getPlaylist();
+          playlist.splice(idx, 1);
+          savePlaylist(playlist);
+          renderPlaylist();
+        };
+      });
+    }
+    // ---- END PLAYLIST LOGIC ----
+
+    window.onload = renderPlaylist;
+
+    // ---- HEART SCROLL LOGIC ----
+    const scrollDiv = document.getElementById('resultsScroll');
+    const scrollLeftBtn = document.getElementById('scrollLeftBtn');
+    const scrollRightBtn = document.getElementById('scrollRightBtn');
+    const resultsScrollWrapper = document.getElementById('resultsScrollWrapper');
+    const resultsDiv = document.getElementById('results');
+
+    function updateHeartVisibility() {
+      scrollLeftBtn.hidden = scrollDiv.scrollLeft <= 10;
+      scrollRightBtn.hidden = scrollDiv.scrollWidth - scrollDiv.clientWidth - scrollDiv.scrollLeft <= 10;
+    }
+    if(scrollDiv && scrollLeftBtn && scrollRightBtn) {
+      scrollDiv.addEventListener('scroll', updateHeartVisibility);
+      scrollLeftBtn.onclick = () => scrollDiv.scrollBy({left: -350, behavior: 'smooth'});
+      scrollRightBtn.onclick = () => scrollDiv.scrollBy({left: 350, behavior: 'smooth'});
+      let scrollInterval = null;
+      scrollLeftBtn.onmousedown = () => { scrollInterval = setInterval(() => scrollDiv.scrollBy({left: -40}), 40); };
+      scrollRightBtn.onmousedown = () => { scrollInterval = setInterval(() => scrollDiv.scrollBy({left: 40}), 40); };
+      window.onmouseup = () => { clearInterval(scrollInterval); };
+    }
+
+    // Render search results as horizontally scrollable cards
+    let videos = [];
+    let selectedVideo = null;
+
+    function renderSearchResults(videos) {
+      if (!videos || !videos.length) {
+        resultsScrollWrapper.style.display = "none";
+        resultsDiv.style.display = "block";
+        resultsDiv.innerHTML = "No videos found.";
+        return;
+      }
+      resultsScrollWrapper.style.display = "block";
+      resultsDiv.style.display = "none";
+      scrollDiv.innerHTML = videos.map((video, idx) => {
+        let thumb = video.snippet.thumbnails && video.snippet.thumbnails.medium
+          ? video.snippet.thumbnails.medium.url
+          : (video.snippet.thumbnails && video.snippet.thumbnails.default
+              ? video.snippet.thumbnails.default.url
+              : "https://via.placeholder.com/80x56?text=No+Image");
+        let videoId = video.id && video.id.videoId ? video.id.videoId : "";
+        return `
+          <div class="result-card" tabindex="0" data-idx="${idx}">
+            <img src="${thumb}" alt="Thumbnail" onerror="this.src='https://via.placeholder.com/80x56?text=No+Image'"/>
+            <div class="video-info">
+              <div class="video-title">${video.snippet.title}</div>
+              <div class="video-channel">${video.snippet.channelTitle}</div>
+              ${!videoId ? `<div style="color:#f55;font-size:10px;">(No video ID - can't open)</div>` : ""}
+            </div>
+          </div>
+        `;
+      }).join('');
+      updateHeartVisibility();
+      Array.from(scrollDiv.getElementsByClassName('result-card')).forEach(el => {
+        el.onclick = function() {
+          Array.from(scrollDiv.getElementsByClassName('result-card')).forEach(t => t.classList.remove('selected'));
+          el.classList.add('selected');
+          selectedVideo = videos[el.getAttribute('data-idx')];
+        };
+        el.ondblclick = function() {
+          const idx = el.getAttribute('data-idx');
+          const video = videos[idx];
+          const videoId = video.id && video.id.videoId ? video.id.videoId : null;
+          if (videoId) {
+            window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+          } else {
+            alert("Sorry, this video can't be opened (no video ID).");
+          }
+        };
+        el.onkeyup = function(e) {
+          if (e.key === "Enter" || e.key === " ") el.onclick();
+          if (e.key === "ArrowRight") {
+            let next = el.nextElementSibling;
+            if (next) next.focus();
+          }
+          if (e.key === "ArrowLeft") {
+            let prev = el.previousElementSibling;
+            if (prev) prev.focus();
+          }
+        };
+      });
+    }
+
+    // Search button click: fetch videos
+    const API_KEY = "AIzaSyBVraeh9d2Ren5l3QMP6ZjdHu-s51bqyps";
+    document.getElementById('searchBtn').onclick = async function() {
+      const q = document.getElementById('topic').value.trim();
+      if (!q) return;
+      resultsScrollWrapper.style.display = "none";
+      resultsDiv.style.display = "block";
+      resultsDiv.innerHTML = "Searching...";
+      selectedVideo = null;
+      document.getElementById('tedCard').style.display = 'none';
+
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=8&q=${encodeURIComponent(q)}&key=${API_KEY}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        videos = data.items || [];
+        renderSearchResults(videos);
+      } catch (err) {
+        resultsScrollWrapper.style.display = "none";
+        resultsDiv.style.display = "block";
+        resultsDiv.innerHTML = "Error fetching results.";
+      }
+    };
+
+    // Pressing Enter in topic input triggers search if not picking from autocomplete
+    topicInput.addEventListener('keydown', function(event) {
+      if (event.key === "Enter" && autocompleteList.style.display === "none") {
+        event.preventDefault();
+        document.getElementById('searchBtn').click();
+      }
+    });
+
+    // Build TED Talk card
+    document.getElementById('buildBtn').onclick = function() {
+      const desc = document.getElementById('desc').value.trim();
+      if (!selectedVideo) {
+        document.getElementById('tedCard').style.display = 'block';
+        document.getElementById('tedCard').innerHTML = "<i>Please pick a video.</i>";
+        return;
+      }
+      let videoId = selectedVideo.id && selectedVideo.id.videoId ? selectedVideo.id.videoId : "";
+      let videoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : "#";
+      document.getElementById('tedCard').style.display = 'block';
+      document.getElementById('tedCard').innerHTML = `
+        <h2>${selectedVideo.snippet.title}</h2>
+        <div><b>${selectedVideo.snippet.channelTitle}</b></div>
+        ${videoId ? `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>` : "<div style='color:#f55'>No video available for preview.</div>"}
+        <div>
+          <a href="${videoUrl}" class="watch-btn" target="_blank">Watch on YouTube</a>
+        </div>
+        <div class="desc">${desc||"(No description.)"}</div>
+        <button id="addToPlaylistBtn" style="background:#4caf50;color:#fff;margin-top:18px;">Add to Playlist</button>
+      `;
+      document.getElementById('addToPlaylistBtn').onclick = function() {
+        const playlist = getPlaylist();
+        playlist.push({
+          title: selectedVideo.snippet.title,
+          channel: selectedVideo.snippet.channelTitle,
+          videoId: videoId,
+          desc: desc
+        });
+        savePlaylist(playlist);
+        renderPlaylist();
+        document.getElementById('addToPlaylistBtn').disabled = true;
+        document.getElementById('addToPlaylistBtn').innerText = "Added!";
+      };
+    };
+  </script>
+</body>
+</html>
